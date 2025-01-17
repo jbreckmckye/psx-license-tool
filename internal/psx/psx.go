@@ -46,18 +46,18 @@ func GetLicenseText(license []cdformat.XAForm1Sector) []byte {
 
 func GetLicenseTMD(license []cdformat.XAForm1Sector) []byte {
 	sectors := license[5:]
-	tmd := []byte{}
+	var tmd []byte
 
 	for _, sector := range sectors {
-    bytes := sector.Data[:]
+		bytes := sector.Data[:]
 		tmd = slices.Concat(tmd, bytes)
 	}
 
 	// Trim trailing nulls
-  lastByte := len(tmd) - 1
+	lastByte := len(tmd) - 1
 	for lastByte >= 0 {
-    byte := tmd[lastByte]
-    if byte == 0xFF {
+		char := tmd[lastByte]
+		if char == 0xFF {
 			lastByte--
 		} else {
 			break

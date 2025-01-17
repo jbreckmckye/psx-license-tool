@@ -9,10 +9,8 @@ import (
 	"github.com/jbreckmckye/psx-license-tool/internal/psx"
 )
 
-const LICENSE_SECTORS = 16
-
 func main() {
-	log.SetPrefix("psxlicensedump | ")
+	log.SetPrefix("[psxlicensedump]")
 	log.SetFlags(0)
 
 	var args struct {
@@ -35,6 +33,13 @@ func main() {
 	region := psx.GetLicenseText(license)
 	tmd := psx.GetLicenseTMD(license)
 
-	os.WriteFile(args.Out+".TXT", region, 0644)
-	os.WriteFile(args.Out+".TMD", tmd, 0644)
+	err = os.WriteFile(args.Out+".TXT", region, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = os.WriteFile(args.Out+".TMD", tmd, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
