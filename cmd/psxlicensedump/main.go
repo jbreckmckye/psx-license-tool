@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -31,9 +32,25 @@ func main() {
 	}
 
 	region := psx.GetLicenseText(license)
+	regionLength := 70
+
+	if region == psx.EUR_STRING {
+    fmt.Println("Detected European license")
+	} else if region == psx.USA_STRING {
+    fmt.Println("Detected American license")
+	} else {
+		japanMatch := [65]byte(region[:65])
+    if japanMatch == psx.JP_STRING {
+      fmt.Println("Detected Japanese license")
+			regionLength = 65
+		} else {
+			fmt.Println("Unknown license type? Check file is a PSX disc image BIN. Attempting to continue...")
+		}
+	}
+
 	tmd := psx.GetLicenseTMD(license)
 
-	err = os.WriteFile(args.Out+".TXT", region, 0644)
+	err = os.WriteFile(args.Out+".TXT", region[:regionLength], 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,4 +59,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Printf("Dumped license data to %v.TXT, %v.TMD\n", args.Out, args.Out)
 }

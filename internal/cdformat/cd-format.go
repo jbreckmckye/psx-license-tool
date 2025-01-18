@@ -11,8 +11,6 @@ const ISO_SECTOR_SIZE = 2352
  * of 2352 bytes, including headers and metadata. How much metadata depends on the "form", Form 1
  * includes subheader and error correction data, Form 2 does not.
  *
- * The PSX license data is stored on the first 16 sectors of the disc image in XA-Form1 format.
- * When reading / writing the data we don't care about the ECC as it's wrong anyway
  */
 
 type XAForm1Sector struct {
