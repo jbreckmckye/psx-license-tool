@@ -2,6 +2,7 @@ package psx
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"slices"
@@ -20,9 +21,17 @@ import (
  * there were too many games released with "broken" ECCs so they had to support it to be backwards compatible. Therefore the
  * PSX BIOS only reads the first 0x800 (2048) bytes of each sector.
  *
+ * Sector overview
+ *   Sector 0..3   - Zerofilled (Mode2/Form1, 4x800h bytes, plus ECC/EDC)
+ *   Sector 4      - Licence String
+ *   Sector 5..11  - Playstation Logo (3278h bytes) (remaining bytes FFh-filled)
+ *   Sector 12..15 - Zerofilled (Mode2/Form2, 4x914h bytes, plus EDC)
  */
 
 const LICENSE_SECTORS = 16
+
+const TEXT_SECTOR = 4
+const TMD_FIRST_SECTOR = 5
 
 // EU/US: String is followed repeating 0x00 bytes
 var EUR_STRING = [70]byte{0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x4C, 0x69, 0x63, 0x65, 0x6E, 0x73, 0x65, 0x64, 0x20, 0x20, 0x62, 0x79, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x53, 0x6F, 0x6E, 0x79, 0x20, 0x43, 0x6F, 0x6D, 0x70, 0x75, 0x74, 0x65, 0x72, 0x20, 0x45, 0x6E, 0x74, 0x65, 0x72, 0x74, 0x61, 0x69, 0x6E, 0x6D, 0x65, 0x6E, 0x74, 0x20, 0x45, 0x75, 0x72, 0x6F, 0x20, 0x70, 0x65, 0x20, 0x20, 0x20}
@@ -60,29 +69,113 @@ func ReadLicense(f *os.File) ([]cdformat.XAForm1Sector, error) {
 }
 
 func GetLicenseText(license []cdformat.XAForm1Sector) [70]byte {
-	sector := license[4]
+	sector := license[TEXT_SECTOR]
 	return [70]byte(sector.Data[:70])
 }
 
+func PatchLicenseText(license []cdformat.XAForm1Sector, text string, japanese bool) {
+	patchedSector := license[TEXT_SECTOR]
+
+	padded := fmt.Sprintf("%-70s", text) // Text plus 70 spaces right-padding
+	textBytes := []byte(padded)
+
+	// Blank data section
+	patchedSector.Data = [2048]byte{}
+	var cursor = 0
+
+	for cursor < 70 {
+		patchedSector.Data[cursor] = textBytes[cursor]
+		cursor++
+	}
+
+	for cursor < 2048 {
+		if japanese {
+			// Fill the rest of the sector with a repeating pattern of:
+			// 62 times {0x30}; 1 single {0x0A}; 1 single {0x30}
+			// This repeats 31 times... meaning it goes *one over* the sector size limit... we sort that further down...
+			offset := cursor - 70
+			patternPosition := offset % 64
+			if patternPosition <= 61 {
+				patchedSector.Data[cursor] = 0x30
+			} else if patternPosition == 62 {
+				patchedSector.Data[cursor] = 0x0A
+			} else if patternPosition == 63 {
+				patchedSector.Data[cursor] = 0x30
+			}
+		} else {
+			patchedSector.Data[cursor] = 0x00
+		}
+
+		cursor++
+	}
+
+	if japanese {
+		// Because the JP sector padding overruns into the EDC data... this format is a mess...
+		patchedSector.EDC[0] = 0x30
+	}
+
+	license[TEXT_SECTOR] = patchedSector
+}
+
 func GetLicenseTMD(license []cdformat.XAForm1Sector) []byte {
-	sectors := license[5:]
+	sectors := license[TMD_FIRST_SECTOR:]
 	var tmd []byte
 
 	for _, sector := range sectors {
 		bytes := sector.Data[:]
-		tmd = slices.Concat(tmd, bytes)
-	}
 
-	// Trim trailing nulls
-	lastByte := len(tmd) - 1
-	for lastByte >= 0 {
-		char := tmd[lastByte]
-		if char == 0xFF {
-			lastByte--
-		} else {
-			break
+		if !allZeroes(bytes) {
+			tmd = slices.Concat(tmd, bytes)
 		}
 	}
 
 	return tmd
+}
+
+// Returns a tuple: "writable" is whether the TMD *could* fit on the disc, "overBy" is how much over the assumed BIOS limit
+func ValidateTMDSize(tmd []byte) (writable bool, overBy int) {
+	assumedLimit := 7 * 2048 // Sectors 5..11, 2048 bytes per sector
+	absoluteLimit := 11 * 2048
+	size := len(tmd)
+	return size < absoluteLimit, size - assumedLimit
+}
+
+func PatchLicenseTMD(license []cdformat.XAForm1Sector, tmd []byte) {
+	// Blank the data
+	for i := TMD_FIRST_SECTOR; i < LICENSE_SECTORS; i++ {
+		sector := license[i]
+
+		if i < 12 {
+			// TMD sectors are 0xFF filled
+			sector.Data = [2048]byte{}
+			for j := 0; j < 2048; j++ {
+				sector.Data[j] = 0xFF
+			}
+
+		} else {
+			// Final sectors are 0x00 filled
+			sector.Data = [2048]byte{}
+		}
+	}
+
+	// Copy in the TMD. Allow overrun into final sectors
+	for pos, byte := range tmd {
+		sectorN := TMD_FIRST_SECTOR + (pos / 2048)
+		sectorPos := pos % 2048
+
+		if sectorN > 15 {
+			panic("Exceeded license data length")
+		}
+
+		license[sectorN].Data[sectorPos] = byte
+	}
+}
+
+func allZeroes(input []byte) bool {
+	for _, byte := range input {
+		if byte != 0x00 {
+			return false
+		}
+	}
+	return true
 }
