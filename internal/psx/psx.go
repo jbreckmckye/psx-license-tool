@@ -69,14 +69,14 @@ func ReadLicense(f *os.File) ([]cdformat.XAForm1Sector, error) {
 }
 
 func PatchLicense(f *os.File, license []cdformat.XAForm1Sector) error {
-  for i, sector := range license {
-    offset := int64(cdformat.ISO_SECTOR_SIZE * i)  
-		bytes:= cdformat.SerialiseSectorXAForm1(sector)
-    
+	for i, sector := range license {
+		offset := int64(cdformat.ISO_SECTOR_SIZE * i)
+		bytes := cdformat.SerialiseSectorXAForm1(sector)
+
 		bytesWritten, err := f.WriteAt(bytes, offset)
 		if err != nil {
 			return err
-		} 
+		}
 		if bytesWritten < len(bytes) {
 			return errors.New("wrote too few bytes")
 		}

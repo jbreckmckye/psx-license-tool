@@ -35,13 +35,13 @@ func main() {
 	regionLength := 70
 
 	if region == psx.EUR_STRING {
-    log.Println("Detected European license")
+		log.Println("Detected European license")
 	} else if region == psx.USA_STRING {
-    log.Println("Detected American license")
+		log.Println("Detected American license")
 	} else {
 		japanMatch := [65]byte(region[:65])
-    if japanMatch == psx.JP_STRING {
-      log.Println("Detected Japanese license")
+		if japanMatch == psx.JP_STRING {
+			log.Println("Detected Japanese license")
 			regionLength = 65
 		} else {
 			log.Println("Unknown license type? Check file is a PSX disc image BIN. Attempting to continue...")
