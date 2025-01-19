@@ -19,7 +19,7 @@ const (
 )
 
 func main() {
-	log.SetPrefix("[psxlicensepatch]")
+	log.SetPrefix("[psxlicensepatch] ")
 	log.SetFlags(0)
 
 	var args struct {
@@ -41,7 +41,12 @@ func main() {
 		checkTMD(tmd)
 	}
 
-	file, err := os.Open(args.BIN)
+	_, err := os.Stat(args.BIN)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	file, err := os.OpenFile(args.BIN, os.O_RDWR, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,6 +85,11 @@ func main() {
 
 	if tmd != nil {
 		psx.PatchLicenseTMD(license, tmd)
+	}
+
+	err = psx.PatchLicense(file, license)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	log.Println("BIN was patched")

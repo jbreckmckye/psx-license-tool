@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	log.SetPrefix("[psxlicensedump]")
+	log.SetPrefix("[psxlicensedump] ")
 	log.SetFlags(0)
 
 	var args struct {
@@ -35,16 +35,16 @@ func main() {
 	regionLength := 70
 
 	if region == psx.EUR_STRING {
-    fmt.Println("Detected European license")
+    log.Println("Detected European license")
 	} else if region == psx.USA_STRING {
-    fmt.Println("Detected American license")
+    log.Println("Detected American license")
 	} else {
 		japanMatch := [65]byte(region[:65])
     if japanMatch == psx.JP_STRING {
-      fmt.Println("Detected Japanese license")
+      log.Println("Detected Japanese license")
 			regionLength = 65
 		} else {
-			fmt.Println("Unknown license type? Check file is a PSX disc image BIN. Attempting to continue...")
+			log.Println("Unknown license type? Check file is a PSX disc image BIN. Attempting to continue...")
 		}
 	}
 
@@ -60,5 +60,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Dumped license data to %v.TXT, %v.TMD\n", args.Out, args.Out)
+	msg := fmt.Sprintf("Dumped license data to %v.TXT, %v.TMD\n", args.Out, args.Out)
+	log.Println(msg)
 }

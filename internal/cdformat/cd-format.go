@@ -46,3 +46,24 @@ func ParseSectorXAForm1(sector []byte) (XAForm1Sector, error) {
 		ECC:     [276]byte(ercc),
 	}, nil
 }
+
+func SerialiseSectorXAForm1(sector XAForm1Sector) []byte {
+	sync := sector.Sync[:]
+	addr := sector.Addr[:]
+	mode := sector.Mode
+	subh := sector.SubHead[:]
+	data := sector.Data[:]
+	erdc := sector.EDC[:]
+	ercc := sector.ECC[:]
+
+	var bytes = []byte{}
+	bytes = append(bytes, sync...)
+	bytes = append(bytes, addr...)
+	bytes = append(bytes, mode)
+	bytes = append(bytes, subh...)
+	bytes = append(bytes, data...)
+	bytes = append(bytes, erdc...)
+	bytes = append(bytes, ercc...)
+
+	return bytes
+}
