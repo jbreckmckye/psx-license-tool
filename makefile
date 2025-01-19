@@ -1,4 +1,4 @@
-all: clean build
+all: clean build pack
 
 clean:
 	rm -rf build
@@ -11,3 +11,7 @@ build:
 	GOOS=darwin  GOARCH=arm64 go build -o build/macos/ ./cmd/psxlicensedump
 	GOOS=darwin  GOARCH=arm64 go build -o build/macos/ ./cmd/psxlicensepatch
 
+pack:
+	(cd build/windows && zip -9 -y -r psxlicensetool.zip .)
+	(cd build/linux   && zip -9 -y -r psxlicensetool.zip .)
+	(cd build/macos   && zip -9 -y -r psxlicensetool.zip .)
