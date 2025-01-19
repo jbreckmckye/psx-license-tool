@@ -73,7 +73,7 @@ func GetLicenseText(license []cdformat.XAForm1Sector) [70]byte {
 	return [70]byte(sector.Data[:70])
 }
 
-func PatchLicenseText(license []cdformat.XAForm1Sector, text string, japanese bool) {
+func PatchLicenseText(license []cdformat.XAForm1Sector, text []byte, japanese bool) {
 	patchedSector := license[TEXT_SECTOR]
 
 	padded := fmt.Sprintf("%-70s", text) // Text plus 70 spaces right-padding
@@ -112,7 +112,7 @@ func PatchLicenseText(license []cdformat.XAForm1Sector, text string, japanese bo
 	if japanese {
 		// Because the JP sector padding overruns into the EDC data... this format is a mess...
 		patchedSector.EDC[0] = 0x30
-	}
+	} // We don't bother un-setting this for non-JP discs as the EDC isn't used anyway
 
 	license[TEXT_SECTOR] = patchedSector
 }
@@ -137,7 +137,15 @@ func ValidateTMDSize(tmd []byte) (writable bool, overBy int) {
 	assumedLimit := 7 * 2048 // Sectors 5..11, 2048 bytes per sector
 	absoluteLimit := 11 * 2048
 	size := len(tmd)
-	return size < absoluteLimit, size - assumedLimit
+
+	writable = size < absoluteLimit
+	if writable {
+		overBy = size - assumedLimit
+	} else {
+		overBy = size - absoluteLimit
+	}
+
+	return writable, overBy
 }
 
 func PatchLicenseTMD(license []cdformat.XAForm1Sector, tmd []byte) {
@@ -158,7 +166,7 @@ func PatchLicenseTMD(license []cdformat.XAForm1Sector, tmd []byte) {
 		}
 	}
 
-	// Copy in the TMD. Allow overrun into final sectors
+	// Copy in the TMD. Allow overrun into final sectors, although such TMDs probably won't work
 	for pos, byte := range tmd {
 		sectorN := TMD_FIRST_SECTOR + (pos / 2048)
 		sectorPos := pos % 2048
