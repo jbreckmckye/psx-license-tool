@@ -1,8 +1,9 @@
 # PSX License Tool
 
-This is a pair of utilities for dumping and patching license data on PlayStation 1 disc images.
+Utilities for dumping and patching license data on PlayStation 1 disc images.
 
-Very new, still in beta, but local testing seems to work
+You can use this for licensing
+homebrew PSX games
 
 ## Installing
 
@@ -12,11 +13,9 @@ Please look to the `releases` for a binary matching your platform:
 - Windows x64
 - MacOS ARM
 
-Non-Linux binaries were cross-compiled and come with no guarantees (but the Windows ones seem to work on WINE)
-
 ## psxlicensedump
 
-Given a BIN file from a `.CUE/.BIN` pair, writes out a LICENSE.TXT (license string) and LICENSE.TMD
+Given a BIN file from a `.CUE/.BIN` pair, writes out LICENSE.TXT (license string) and LICENSE.TMD
 file (PSX disc logo)
 
 ```shell
@@ -30,13 +29,21 @@ Options:
   --help, -h             display this help and exit
 ```
 
+Example usage
+
+```
+psxlicensedump SPYRO.BIN
+```
+
 ## psxlicensepatch
 
-Modifies the license data on a disc BIN archive (e.g from CUE/BIN pair)
+Patches the license data on a disc BIN image (e.g from CUE/BIN pair)
 
-- **Region** sets the region to apply to the license text section. If `text` is not set it will apply the default license text
-- **Text** lets you set text. Bear in mind the data is truncated at 70 bytes
-- **TMD** lets you specify a file for the TMD logo data. You'll get an error or warning if this looks too big.
+There are 3 options
+
+- **Region** to set disc to JP, US or EUR. If `text` is not overriden, this sets default license text for chosen region
+- **Text** lets you customise the text that displays on the PSX logo screen. Bear in mind the data is truncated at 70 bytes.
+- **TMD** lets you specify a file for the TMD logo model. You'll get an error or warning if this looks too big.
 
 ```shell
 Usage: psxlicensepatch [--region REGION] [--text TEXT] [--tmd TMD] BIN
